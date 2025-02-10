@@ -18,6 +18,5 @@ type Domain struct {
 	Records Records
 }
 
-type Configs struct {
-	Domains []Domain
-}
+type Configs map[string]Domain
+
