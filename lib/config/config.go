@@ -47,3 +47,24 @@ func ReadConfigDir(path string) ([]string, error) {
 
 	return configFiles, err
 }
+
+func (d Domain) GetSubRecord(recordType uint16, subDomain string) Record {
+	var records []Record = []Record{};
+
+	switch recordType {
+		case dns.TypeA:
+			records = d.Records.A;
+		case dns.TypeCNAME:
+			records = d.Records.CNAME;
+		case dns.TypeTXT:
+			records = d.Records.TXT;
+	}
+
+	for _, record := range records {
+		if subDomain == record.Name {
+			return record;
+		}
+	}
+	
+	return Record{};
+}
