@@ -4,11 +4,12 @@ import (
 	"os"
 	"strings"
 
+	"github.com/miekg/dns"
 	"gopkg.in/yaml.v3"
 )
 
 func ReadConfig(configs []string) (Configs, error) {
-	var config Configs
+	var config Configs = Configs{};
 
 	for _, path := range configs {
 		b := Domain{}
@@ -23,12 +24,11 @@ func ReadConfig(configs []string) (Configs, error) {
 			return config, err
 		}
 
-		config.Domains = append(config.Domains, b)
+		config[b.Domain + "."] = b
 	}
 
 	return config, nil
 }
-
 
 func ReadConfigDir(path string) ([]string, error) {
 	files, err := os.ReadDir(path)
