@@ -24,6 +24,7 @@ func extractSubdomainAndRoot(url string) (string, string) {
 	}
 
 	domain := matches[1]
+	domain = strings.TrimSuffix(domain, ".")
 
 	// Get the root domain using publicsuffix package
 	root, err := publicsuffix.EffectiveTLDPlusOne(domain)
@@ -65,18 +66,18 @@ func createResourceRecord(q *dns.Question, record config.Record) dns.RR {
 	return response;
 }
 
-func handleQuery(q *dns.Question, msg *dns.Msg) {
+func handleQuery(q *dns.Question, msg *dns.Msg) dns.RR {
 	subDomain, rootDomain := extractSubdomainAndRoot(q.Name);
-	domain := CONFIG[rootDomain];
+	domain := CONFIG[rootDomain+"."];
 
 	record := domain.GetSubRecord(q.Qtype, subDomain)
 
 	if domain.Domain == "" {
-		msg.Answer = append(msg.Answer)
-		return;
+		fmt.Println("Not Found")
+		return nil;
 	}
 
-	msg.Answer = append(msg.Answer, createResourceRecord(q, record))
+	return createResourceRecord(q, record)
 }
 
 // handleDNSRequest processes incoming DNS queries
@@ -85,7 +86,10 @@ func handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 	msg.SetReply(r)
 	
 	for _, q := range r.Question {
-		handleQuery(&q, &msg);
+		res := handleQuery(&q, &msg);
+		if res != nil {
+			msg.Answer = append(msg.Answer, res)
+		}
 	}
 	
 	err := w.WriteMsg(&msg)
