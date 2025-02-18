@@ -73,3 +73,18 @@ func (d Domain) GetSubRecord(recordType uint16, subDomain string) Record {
 	return Record{}
 }
 
+func ReadBaseConfig(path string) (Config, error) {
+	var baseConfig Config = Config{}
+
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return baseConfig, err
+	}
+
+	err = yaml.Unmarshal(content, &baseConfig)
+	if err != nil {
+		return baseConfig, err
+	}
+
+	return baseConfig, nil
+}
