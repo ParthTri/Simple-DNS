@@ -1,5 +1,12 @@
 package config
 
+// * A type for the application for base DNS server and other data
+type Config struct {
+	DNS_Resolvers  []string
+	DNS_Over_HTTPS bool
+	DNS_Over_TLS   bool
+}
+
 type Record struct {
 	Name  string
 	Value string
