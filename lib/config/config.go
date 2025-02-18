@@ -9,9 +9,13 @@ import (
 )
 
 func ReadConfig(configs []string) (Configs, error) {
-	var config Configs = Configs{};
+	var config Configs = Configs{}
 
 	for _, path := range configs {
+		if path == "config.yml" || path == "config.yaml" {
+			continue
+		}
+
 		b := Domain{}
 
 		content, err := os.ReadFile(path)
@@ -24,7 +28,7 @@ func ReadConfig(configs []string) (Configs, error) {
 			return config, err
 		}
 
-		config[b.Domain + "."] = b
+		config[b.Domain+"."] = b
 	}
 
 	return config, nil
@@ -32,7 +36,7 @@ func ReadConfig(configs []string) (Configs, error) {
 
 func ReadConfigDir(path string) ([]string, error) {
 	files, err := os.ReadDir(path)
-	var configFiles []string = []string{};
+	var configFiles []string = []string{}
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +45,7 @@ func ReadConfigDir(path string) ([]string, error) {
 		name := strings.Split(file.Name(), ".")
 		suffix := name[len(name)-1]
 		if suffix == "yaml" || suffix == "yml" {
-			configFiles = append(configFiles, path + "/" + file.Name())
+			configFiles = append(configFiles, path+"/"+file.Name())
 		}
 	}
 
@@ -49,22 +53,23 @@ func ReadConfigDir(path string) ([]string, error) {
 }
 
 func (d Domain) GetSubRecord(recordType uint16, subDomain string) Record {
-	var records []Record = []Record{};
+	var records []Record = []Record{}
 
 	switch recordType {
-		case dns.TypeA:
-			records = d.Records.A;
-		case dns.TypeCNAME:
-			records = d.Records.CNAME;
-		case dns.TypeTXT:
-			records = d.Records.TXT;
+	case dns.TypeA:
+		records = d.Records.A
+	case dns.TypeCNAME:
+		records = d.Records.CNAME
+	case dns.TypeTXT:
+		records = d.Records.TXT
 	}
 
 	for _, record := range records {
 		if subDomain == record.Name {
-			return record;
+			return record
 		}
 	}
-	
-	return Record{};
+
+	return Record{}
 }
+
