@@ -66,18 +66,31 @@ func createResourceRecord(q *dns.Question, record config.Record) dns.RR {
 	return response;
 }
 
-func handleQuery(q *dns.Question, msg *dns.Msg) dns.RR {
+func handleQuery(q *dns.Question, msg *dns.Msg) []dns.RR {
+	client :=  new(dns.Client)
 	subDomain, rootDomain := extractSubdomainAndRoot(q.Name);
 	domain := CONFIG[rootDomain+"."];
 
 	record := domain.GetSubRecord(q.Qtype, subDomain)
 
-	if domain.Domain == "" {
+	// * Look up the domain from another DNS server
+	if domain.Domain == "" || len(domain.Domain) == 0 {
 		fmt.Println("Not Found")
-		return nil;
+		
+		msg := new(dns.Msg)
+		msg.Question = append(msg.Question, *q)
+		in, _, err := client.Exchange(msg,"1.1.1.1:53")
+
+		if err != nil || len(in.Answer) == 0 {
+			return nil;
+		}
+
+		return in.Answer;
 	}
 
-	return createResourceRecord(q, record)
+	results := []dns.RR{}
+	results = append(results, createResourceRecord(q, record))
+	return results
 }
 
 // handleDNSRequest processes incoming DNS queries
@@ -87,9 +100,7 @@ func handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 	
 	for _, q := range r.Question {
 		res := handleQuery(&q, &msg);
-		if res != nil {
-			msg.Answer = append(msg.Answer, res)
-		}
+		msg.Answer = append(msg.Answer, res...)
 	}
 	
 	err := w.WriteMsg(&msg)
