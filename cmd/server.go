@@ -80,16 +80,26 @@ func handleQuery(q *dns.Question, msg *dns.Msg) []dns.RR {
 	// * Look up the domain from another DNS server
 	if domain.Domain == "" || len(domain.Domain) == 0 {
 		fmt.Println("Not Found")
+		var in *dns.Msg
+		var err error
 
 		msg := new(dns.Msg)
 		msg.Question = append(msg.Question, *q)
-		in, _, err := client.Exchange(msg, "127.0.0.1:1234")
+		for _, server := range BASE_CONFIG.DNS_Resolvers {
 
-		if err != nil || len(in.Answer) == 0 {
-			fmt.Println(err)
-			return nil
+			if !BASE_CONFIG.DNS_Over_HTTPS && !BASE_CONFIG.DNS_Over_TLS {
+				in, _, err = client.Exchange(msg, server+":53")
+				fmt.Println(in.Answer)
+			}
+
+			if err != nil && strings.Contains(err.Error(), "connection refused") {
+				continue
+			} else if err != nil || len(in.Answer) == 0 {
+				continue
+			}
+
+			break
 		}
-
 		return in.Answer
 	}
 
