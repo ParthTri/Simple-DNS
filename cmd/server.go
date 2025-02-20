@@ -8,13 +8,16 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/miekg/dns"
+	"github.com/patrickmn/go-cache"
 	"golang.org/x/net/publicsuffix"
 )
 
 var CONFIG config.Configs
 var BASE_CONFIG config.Config
+var CACHE cache.Cache
 
 func extractSubdomainAndRoot(url string) (string, string) {
 	// Regex to extract the domain part from a URL
@@ -85,12 +88,16 @@ func handleQuery(q *dns.Question, msg *dns.Msg) []dns.RR {
 
 		msg := new(dns.Msg)
 		msg.Question = append(msg.Question, *q)
+		fmt.Println(msg.Question)
 		for _, server := range BASE_CONFIG.DNS_Resolvers {
+			fmt.Println(server + ":53")
 
 			if !BASE_CONFIG.DNS_Over_HTTPS && !BASE_CONFIG.DNS_Over_TLS {
 				in, _, err = client.Exchange(msg, server+":53")
-				fmt.Println(in.Answer)
 			}
+
+			fmt.Println(in)
+			fmt.Println(in.Response)
 
 			if err != nil && strings.Contains(err.Error(), "connection refused") {
 				continue
@@ -100,6 +107,8 @@ func handleQuery(q *dns.Question, msg *dns.Msg) []dns.RR {
 
 			break
 		}
+
+		CACHE.Set(q.Name, in.Answer, cache.DefaultExpiration)
 		return in.Answer
 	}
 
@@ -114,7 +123,19 @@ func handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 	msg.SetReply(r)
 
 	for _, q := range r.Question {
-		res := handleQuery(&q, &msg)
+		var res []dns.RR
+		if cacheRes, found := CACHE.Get(q.Name); found {
+			fmt.Println("Hit cache")
+			if len(cacheRes.([]dns.RR)) == 0 {
+				CACHE.Delete(q.Name)
+				res = handleQuery(&q, &msg)
+			} else {
+				res = cacheRes.([]dns.RR)
+			}
+		} else {
+			res = handleQuery(&q, &msg)
+		}
+
 		msg.Answer = append(msg.Answer, res...)
 	}
 
@@ -151,6 +172,10 @@ func main() {
 
 	fmt.Println(configs)
 	fmt.Println(baseConfig)
+
+	// * SETUP Cache
+	cache := cache.New(10*time.Minute, 20*time.Minute)
+	CACHE = *cache
 
 	// Create a DNS server
 	dns.HandleFunc(".", handleDNSRequest)
