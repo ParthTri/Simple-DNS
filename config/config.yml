@@ -1,0 +1,6 @@
+dns_resolvers:
+  - 1.1.1.1
+  - 8.8.8.8
+  - 8.8.4.4
+dns_over_https: false
+dns_over_tls: false
