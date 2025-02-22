@@ -1,4 +1,4 @@
-module DNS-Resolver
+module Simple-DNS
 
 go 1.23.4
 

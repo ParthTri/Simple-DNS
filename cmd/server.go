@@ -147,7 +147,7 @@ func handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 
 // TODO: Create a cache for recently searched addresses
 func main() {
-	configFiles, err := config.ReadConfigDir("test-configs")
+	configFiles, err := config.ReadConfigDir("config")
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -158,7 +158,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	baseConfig, err := config.ReadBaseConfig("test-configs/config.yml")
+	baseConfig, err := config.ReadBaseConfig("configs/config.yml")
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
